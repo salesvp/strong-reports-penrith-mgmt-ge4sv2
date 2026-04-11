@@ -14,7 +14,7 @@
   font-style: normal;
 }
 *,*::before,*::after { box-sizing: border-box; }
-body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; color: #000; margin: 0; padding: 0; font-size: 14px; }
+body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; color: #000; margin: 0; padding: 0; font-size: 14px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 .topbar { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #000; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 1000; }
 .tb-wordmark { font-family: 'Kessel Heavy', sans-serif; font-size: 22px; color: #87CEEB; letter-spacing: 3px; }
@@ -39,7 +39,7 @@ body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; color: #000; 
 .section-card.open .section-card-header .icon { transform: rotate(180deg); }
 
 .section-card-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-.section-card.open .section-card-body { max-height: 600px; }
+.section-card.open .section-card-body { max-height: 2000px; }
 .section-card-body-inner { padding: 16px 20px; }
 
 .report-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #f0f0f0; text-decoration: none; color: #000; transition: all 0.2s ease; }
@@ -49,6 +49,8 @@ body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; color: #000; 
 .report-row .date { font-size: 11px; color: #999; }
 .report-row .chevron { color: #ccc; font-size: 18px; transition: color 0.2s; }
 .report-row:hover .chevron { color: #87CEEB; }
+
+.loading { text-align: center; padding: 40px; color: #999; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
 
 @media (hover: none) {
   .report-row:active { color: #87CEEB; }
@@ -70,40 +72,100 @@ body { font-family: 'Montserrat', sans-serif; background: #f5f5f5; color: #000; 
 </div>
 <div class="page-header">
   <div class="page-header-inner">
-    <div class="crumb">Reports <span>›</span> Penrith <span>›</span> Management</div>
+    <div class="crumb">Reports <span>&#8250;</span> Penrith <span>&#8250;</span> Management</div>
     <h1>PENRITH</h1>
     <div class="meta-pills">
       <span class="meta-pill">Management Reports</span>
     </div>
   </div>
 </div>
-<div class="content">
-  <div class="section-card" id="y2026">
-    <div class="section-card-header" onclick="toggleYear('y2026')">
-      <div class="left"><div class="label">Reports</div><div class="title">2026</div></div>
-      <span class="icon">▼</span>
-    </div>
-    <div class="section-card-body"><div class="section-card-body-inner">
-      <a href="mar-2026.html" class="report-row"><div><div class="name">March 2026</div><div class="date">Q1 2026 · Jan – Mar</div></div><div class="chevron">›</div></a>
-      <a href="feb-2026.html" class="report-row"><div><div class="name">February 2026</div><div class="date">Rolling 3-Month · Dec 2025 – Feb 2026</div></div><div class="chevron">›</div></a>
-      <a href="jan-2026.html" class="report-row"><div><div class="name">January 2026</div><div class="date">Rolling 3-Month · Nov 2025 – Jan 2026</div></div><div class="chevron">›</div></a>
-    </div></div>
-  </div>
-  <div class="section-card" id="y2025">
-    <div class="section-card-header" onclick="toggleYear('y2025')">
-      <div class="left"><div class="label">Reports</div><div class="title">2025</div></div>
-      <span class="icon">▼</span>
-    </div>
-    <div class="section-card-body"><div class="section-card-body-inner">
-      <a href="dec-2025.html" class="report-row"><div><div class="name">December 2025</div><div class="date">Q4 2025 · Oct – Dec</div></div><div class="chevron">›</div></a>
-    </div></div>
-  </div>
+<div class="content" id="report-list">
+  <div class="loading">Loading reports...</div>
 </div>
 <script>
-function toggleYear(id) {
-  document.getElementById(id).classList.toggle('open');
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+function parseReport(filename) {
+  // Expected format: mon-yyyy.html e.g. mar-2026.html
+  var m = filename.match(/^([a-z]{3})-(\d{4})\.html$/);
+  if (!m) return null;
+  var mi = SHORT.indexOf(m[1]);
+  if (mi === -1) return null;
+  var year = parseInt(m[2]);
+  var monthName = MONTHS[mi];
+  
+  // Determine subtitle based on position
+  // Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+  var qMonth = (mi % 3); // 0=first of quarter, 1=mid, 2=last
+  var qNum = Math.floor(mi / 3) + 1;
+  var subtitle;
+  
+  if (qMonth === 2) {
+    // Last month of quarter = quarterly report
+    subtitle = 'Q' + qNum + ' ' + year + ' \u00B7 ' + MONTHS[mi-2] + ' \u2013 ' + monthName;
+  } else {
+    // Rolling 3-month
+    var startMi = mi - 2;
+    var startYear = year;
+    if (startMi < 0) { startMi += 12; startYear--; }
+    var endMi = mi;
+    subtitle = 'Rolling 3-Month \u00B7 ' + MONTHS[startMi] + ' ' + startYear + ' \u2013 ' + monthName + ' ' + year;
+  }
+  
+  return {
+    filename: filename,
+    month: mi,
+    year: year,
+    sortKey: year * 100 + mi,
+    title: monthName + ' ' + year,
+    subtitle: subtitle
+  };
 }
-document.querySelector('.section-card').classList.add('open');
+
+// Fetch repo contents from GitHub API
+fetch('https://api.github.com/repos/salesvp/strong-reports-penrith-management/contents/')
+  .then(r => r.json())
+  .then(files => {
+    var reports = [];
+    files.forEach(f => {
+      if (f.name === 'index.html' || f.name === 'README.md' || f.name === 'debug-test.html') return;
+      if (!f.name.endsWith('.html')) return;
+      var parsed = parseReport(f.name);
+      if (parsed) reports.push(parsed);
+    });
+    
+    // Sort newest first
+    reports.sort((a, b) => b.sortKey - a.sortKey);
+    
+    // Group by year
+    var byYear = {};
+    reports.forEach(r => {
+      if (!byYear[r.year]) byYear[r.year] = [];
+      byYear[r.year].push(r);
+    });
+    
+    var years = Object.keys(byYear).sort((a,b) => b - a);
+    var html = '';
+    
+    years.forEach((year, i) => {
+      var rows = '';
+      byYear[year].forEach(r => {
+        rows += '<a href="' + r.filename + '" class="report-row"><div><div class="name">' + r.title + '</div><div class="date">' + r.subtitle + '</div></div><div class="chevron">\u203A</div></a>';
+      });
+      
+      html += '<div class="section-card' + (i === 0 ? ' open' : '') + '" id="y' + year + '">' +
+        '<div class="section-card-header" onclick="this.parentElement.classList.toggle('open')">' +
+        '<div class="left"><div class="label">Reports</div><div class="title">' + year + '</div></div>' +
+        '<span class="icon">\u25BC</span></div>' +
+        '<div class="section-card-body"><div class="section-card-body-inner">' + rows + '</div></div></div>';
+    });
+    
+    document.getElementById('report-list').innerHTML = html;
+  })
+  .catch(err => {
+    document.getElementById('report-list').innerHTML = '<div class="loading">Unable to load reports. Please refresh.</div>';
+  });
 </script>
 </body>
 </html>
