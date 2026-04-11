@@ -161,7 +161,7 @@ fetch('https://api.github.com/repos/salesvp/strong-reports-penrith-management/co
       });
       
       html += '<div class="section-card' + (i === 0 ? ' open' : '') + '" id="y' + year + '">' +
-        '<div class="section-card-header" onclick="this.parentElement.classList.toggle('open')">' +
+        '<div class="section-card-header" onclick="this.parentElement.classList.toggle(\x27open\x27)">' +
         '<div class="left"><div class="label">Reports</div><div class="title">' + year + '</div></div>' +
         '<span class="icon">\u25BC</span></div>' +
         '<div class="section-card-body"><div class="section-card-body-inner">' + rows + '</div></div></div>';
